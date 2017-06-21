@@ -6,7 +6,6 @@
 
 //Variaveis Globais
 FILE * fd;
-int LEDhead = -1;
 
 //Estrutura
 typedef struct{
@@ -22,28 +21,34 @@ void continuar(){
   system("clear");
 }
 
-void remover(int numero_inscricao, indices * index, int totReg){
-  int tam, i = 0, j, encontrado = 0, comparacao,;
-  char c;
 
-  while(!encontrado && (i < totReg)){
-    if (index[i].inscricao == numero_inscricao){ //se forem iguais
+void remover(char * numero_inscricao){
+  int tam, num_lidos = 1, encontrado = 0, LEDhead, offset;
+  char buffer[100], *inscricao;
+
+  offset = 2* sizeof(int); //comeca contando o cabecalho
+  fseek(fd, 0, SEEK_SET); // move o cabecote para o inicio
+  fread(&LEDhead, sizeof(int), 1, fd); //pula o cabecalho e salva o LED head
+  printf("\nLED Head: %d", LEDhead);
+  while(!encontrado && num_lidos){ //Enquanto nao encontrar e tiver linhas
+    num_lidos = fread(&tam, sizeof(int), 1, fd); 
+    fread(buffer, tam, 1, fd);
+    inscricao = strtok(buffer, "|");
+    if (!strcmp(inscricao,numero_inscricao)){ //se forem iguais
       encontrado = 1; // muda o boolean para true
       printf("\nRegistro Encontrado!\n");
-      fseek(fd, index[i].offset + sizeof(int), SEEK_SET);
-      fputs("",fd);
-      // Procurar quem esta com proximo -1 para atualizar como o offset do inserido agora
-      //se o LEDhead for -1, entao deve atualiza-lo para informar o primeiro retirado
-      if (!(LEDhead < 0))
-    } else { //caso sejam diferentes
-        i++;
+      fseek(fd, 0, SEEK_SET);
+      fwrite(&offset, sizeof(int), 1, fd);
+      fseek(fd, offset, SEEK_SET);
+      fprintf(fd, "*|%d|", LEDhead);
+      printf("\nRegistro excluido com sucesso!\n");
     }
+    offset += sizeof(int) + tam; // Calculo do offset
   }
 
   if(!encontrado){
     printf("\nRegistro Nao Encontrado!\n\n");
   }
-  //fclose(fd);
 }
 
 void busca(char * numero_inscricao){
@@ -104,9 +109,8 @@ int readreg(char aux[], FILE * arq){
 
 void importa_dados(){
   FILE * dados_inline;
-  int tam, cont_reg;
+  int tam, LEDhead = -1;
   char aux[90];
-  cont_reg = 0;
 
   system("clear");
   dados_inline = fopen("dados-inline.txt", "r");
@@ -114,10 +118,9 @@ void importa_dados(){
   while((tam = readreg(aux, dados_inline)) > 0){ //enquanto houver registros para ler
       fwrite(&tam, sizeof(int), 1, fd); //escreve o tam do registro retornado por readreg()
       fputs(aux, fd); //escreve no arquivo o buffer
-      cont_reg++;
   }
   fseek(fd, 0, SEEK_SET);
-  fwrite(&cont_reg, sizeof(int), 1, fd);
+  fwrite(&LEDhead, sizeof(int), 1, fd);
   fclose(dados_inline);
   printf("Arquivo de Registros Criado!\n\n");
 
@@ -156,6 +159,7 @@ void main() {
       fd = fopen("registros.txt", "r+"); //abre para leitura e escrita
     }
 
+    /*
     //faz
     fseek(fd, 0, SEEK_SET);
     fread(&totReg, sizeof(totReg), 1, fd);
@@ -172,6 +176,7 @@ void main() {
 
         offset += tamReg + sizeof(int);
     }
+    */
 
     while((escolha = menu()) != 0){
         switch(escolha){
@@ -193,16 +198,17 @@ void main() {
                 break;
             //Inserir
             case 3:
-              system("clear");
-              printf("Insira o numero de inscricao a ser removido: ");
-              gets(num_busca);
-              __fpurge(stdin);
-              remover(atoi(num_busca), index, totReg);
-              continuar();
+
 
                 break;
             //Remover
             case 4:
+                system("clear");
+                printf("Insira o numero de inscricao a ser removido: ");
+                gets(num_busca);
+                __fpurge(stdin);
+                remover(num_busca);
+                continuar();
 
                 break;
             default:
