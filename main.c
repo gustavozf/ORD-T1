@@ -22,39 +22,22 @@ void continuar(){
   system("clear");
 }
 
-void remover(char * numero_inscricao){
-  int tam, i, j, encontrado = 0, comparacao, num_lidos = 1;
-  char aux[7],  c;
+void remover(int numero_inscricao, indices * index, int totReg){
+  int tam, i = 0, j, encontrado = 0, comparacao,;
+  char c;
 
-  //fd = fopen("registros.txt", "r");
-  fseek(fd, sizeof(int), SEEK_SET);// le depois do cabeçalho
-  while(!encontrado && num_lidos){
-    num_lidos = fread(&tam, sizeof(int), 1, fd); // se o retorno for 0, chegou ao final do arquivo
-    fgets(aux, 7, fd); //7, pois le ate n-1
-    comparacao = strcmp(aux, numero_inscricao); //lembrando que se forem iguais, o retorno eh 0
-    if (!comparacao){ //se forem iguais
+  while(!encontrado && (i < totReg)){
+    if (index[i].inscricao == numero_inscricao){ //se forem iguais
       encontrado = 1; // muda o boolean para true
       printf("\nRegistro Encontrado!\n");
-      printf("Numero de Inscricao: ");
-      puts(aux);
-      fgetc(fd); //anda um '| para frente'
-      for(i = 0; i < 3;i++){ //3 vezes, para nome/curso/score
-        printf("%s", reg[i]); //printa a string correspondente
-        j = 0;
-        while((c = fgetc(fd)) != DELIM_STR){ //pega toda a string ate o '|'
-          aux2[j++] = c;
-        }
-        aux2[j] = '\0';
-        puts(aux2);
-
-        //Procurar quem esta com proximo -1 para atualizar como o offset do inserido agora
-        //se o LEDhead for -1, entao deve atualiza-lo para informar o primeiro retirado
-        if (!(LEDhead < 0))
-      }
+      fseek(fd, index[i].offset + sizeof(int), SEEK_SET);
+      fputs("",fd);
+      // Procurar quem esta com proximo -1 para atualizar como o offset do inserido agora
+      //se o LEDhead for -1, entao deve atualiza-lo para informar o primeiro retirado
+      if (!(LEDhead < 0))
     } else { //caso sejam diferentes
-      fseek(fd, tam-6, SEEK_CUR); // tam-6, pois o fgets andou com o ponteiro 6 vezes
+        i++;
     }
-
   }
 
   if(!encontrado){
@@ -214,7 +197,7 @@ void main() {
               printf("Insira o numero de inscricao a ser removido: ");
               gets(num_busca);
               __fpurge(stdin);
-              remover(num_busca);
+              remover(atoi(num_busca), index, totReg);
               continuar();
 
                 break;
