@@ -1,17 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio_ext.h>
 
 #define DELIM_STR '|'
 
 //Variaveis Globais
 FILE * fd;
-
-//Estrutura
-typedef struct{
-  int offset;
-  int inscricao;
-}indices;
 
 //Funcoes
 void continuar(){
@@ -23,15 +18,17 @@ void continuar(){
 
 
 void remover(char * numero_inscricao){
-  int tam, num_lidos = 1, encontrado = 0, LEDhead, offset;
+  int tam, num_lidos, encontrado, LEDhead, offset;
   char buffer[100], *inscricao;
 
+  encontrado = 0;
+  num_lidos = 1;
   offset = 2* sizeof(int); //comeca contando o cabecalho
   fseek(fd, 0, SEEK_SET); // move o cabecote para o inicio
   fread(&LEDhead, sizeof(int), 1, fd); //pula o cabecalho e salva o LED head
-  printf("\nLED Head: %d", LEDhead);
+  //printf("\nLED Head: %d", LEDhead);
   while(!encontrado && num_lidos){ //Enquanto nao encontrar e tiver linhas
-    num_lidos = fread(&tam, sizeof(int), 1, fd); 
+    num_lidos = fread(&tam, sizeof(int), 1, fd);
     fread(buffer, tam, 1, fd);
     inscricao = strtok(buffer, "|");
     if (!strcmp(inscricao,numero_inscricao)){ //se forem iguais
@@ -41,7 +38,7 @@ void remover(char * numero_inscricao){
       fwrite(&offset, sizeof(int), 1, fd);
       fseek(fd, offset, SEEK_SET);
       fprintf(fd, "*|%d|", LEDhead);
-      printf("\nRegistro excluido com sucesso!\n");
+      printf("Registro excluido com sucesso!\n");
     }
     offset += sizeof(int) + tam; // Calculo do offset
   }
@@ -52,41 +49,31 @@ void remover(char * numero_inscricao){
 }
 
 void busca(char * numero_inscricao){
-  int tam, i, j, encontrado = 0, comparacao, num_lidos = 1;
-  char aux[7], aux2[25], c;
+  int tam, i, encontrado , num_lidos = 1;
+  char buffer[100], *aux;
   char * reg[] = {"Nome: ", "Curso: ", "Score: "};
 
-  //fd = fopen("registros.txt", "r");
+  encontrado = 0;
   fseek(fd, sizeof(int), SEEK_SET);// le depois do cabeçalho
   while(!encontrado && num_lidos){
     num_lidos = fread(&tam, sizeof(int), 1, fd); // se o retorno for 0, chegou ao final do arquivo
-    fgets(aux, 7, fd); //7, pois le ate n-1
-    comparacao = strcmp(aux, numero_inscricao); //lembrando que se forem iguais, o retorno eh 0
-    if (!comparacao){ //se forem iguais
+    fread(buffer, tam, 1, fd);
+    aux = strtok(buffer, "|");
+    if (!strcmp(aux, numero_inscricao)){ //se forem iguais
       encontrado = 1; // muda o boolean para true
       printf("\nRegistro Encontrado!\n");
       printf("Numero de Inscricao: ");
       puts(aux);
-      fgetc(fd); //anda um '| para frente'
       for(i = 0; i < 3;i++){ //3 vezes, para nome/curso/score
         printf("%s", reg[i]); //printa a string correspondente
-        j = 0;
-        while((c = fgetc(fd)) != DELIM_STR){ //pega toda a string ate o '|'
-          aux2[j++] = c;
-        }
-        aux2[j] = '\0';
-        puts(aux2);
+        puts(strtok(NULL, "|"));
       }
-    } else { //caso sejam diferentes
-      fseek(fd, tam-6, SEEK_CUR); // tam-6, pois o fgets andou com o ponteiro 6 vezes
     }
-
   }
 
   if(!encontrado){
     printf("\nRegistro Nao Encontrado!\n\n");
   }
-  //fclose(fd);
 }
 
 int readreg(char aux[], FILE * arq){
@@ -138,14 +125,14 @@ int menu(){
     printf("Digite sua escolha: ");
     scanf("%d", &escolha);
     __fpurge(stdin);
+
     return escolha;
 }
 
 //Main
 void main() {
-    int escolha, tam, i, offset;
-    int totReg, tamReg;
-    char num_busca[7], buffer[500], *regID;
+    int escolha;
+    char num_busca[7];
 
     system("clear");
     fd = fopen("registros.txt", "r");
@@ -159,30 +146,10 @@ void main() {
       fd = fopen("registros.txt", "r+"); //abre para leitura e escrita
     }
 
-    /*
-    //faz
-    fseek(fd, 0, SEEK_SET);
-    fread(&totReg, sizeof(totReg), 1, fd);
-    indices index[totReg];
-    offset = sizeof(int);
-
-    for(i=0; i<totReg; i++){
-        fread(&tamReg, sizeof(tamReg), 1, fd);
-        fread(buffer, tamReg, 1, fd);
-        regID = strtok(buffer, "|");
-
-        index[i].inscricao = atoi(regID);
-        index[i].offset = offset;
-
-        offset += tamReg + sizeof(int);
-    }
-    */
-
     while((escolha = menu()) != 0){
         switch(escolha){
             //Importar
             case 1:
-                //fd = fopen("registros.txt", "w");
                 importa_dados();
 
                 break;
@@ -190,7 +157,8 @@ void main() {
             case 2:
                 system("clear");
                 printf("Insira o numero de inscricao a ser buscado: ");
-                gets(num_busca);
+                fgets(num_busca, 7, stdin);
+                num_busca[6] = '\0';
                 __fpurge(stdin);
                 busca(num_busca);
                 continuar();
@@ -205,7 +173,8 @@ void main() {
             case 4:
                 system("clear");
                 printf("Insira o numero de inscricao a ser removido: ");
-                gets(num_busca);
+                fgets(num_busca, 7, stdin);
+                num_busca[6] = '\0';
                 __fpurge(stdin);
                 remover(num_busca);
                 continuar();
@@ -213,7 +182,7 @@ void main() {
                 break;
             default:
                 system("clear");
-                printf("\nEscolha Errada! Tente Novamente!\n");
+                printf("Escolha Errada! Tente Novamente!\n\n");
         }
     }
 
