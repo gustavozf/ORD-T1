@@ -4,9 +4,15 @@
 #include <stdio_ext.h>
 
 #define DELIM_STR '|'
+#define fld_to_recbuff(rb,fld) strcat((rb),(fld)); \
+                               strcat((rb),"|")
 
 //Variaveis Globais
 FILE * fd;
+
+typedef struct {
+    int head, prox, atual, anterior;
+}LED;
 
 //Funcoes
 void continuar(){
@@ -16,6 +22,70 @@ void continuar(){
   system("clear");
 }
 
+void insercao(){
+    int i, tam, aux1, inserido = 0, num_lidos = 1, tam_reg;
+    LED LED;
+    char aux[90], buffer[512], c, prox[20];
+    char *prompt[] = {
+            "    Inscricao: ",
+            "         Nome: ",
+            "        Curso: ",
+            "        Score: ",
+            "" //null string to terminate the prompt loop
+    };
+
+    aux[0] = '\0';
+
+    for (i = 0; prompt[i] != ""; i++){
+        printf("%s", prompt[i]);
+        fgets(aux, 90, stdin); //Pega as informacoes
+        aux[strlen(aux)-1] = '\0';
+        __fpurge(stdin);
+        fld_to_recbuff(buffer, aux); //Salva em um buffer, que formara o novo registro
+    }
+    puts(buffer);
+    tam = strlen(buffer); //Pega o tamanho desse buffer
+    fseek(fd,0, SEEK_SET); //vai pro inicio do arq
+    fread(&aux1, sizeof(int), 1, fd); //Le o LED Head
+    LED.head = LED.atual = LED.anterior = aux1; //salva o valor do LED Head, indicando o ponteiro e o LED Head
+    while(!inserido && num_lidos){
+        fseek(fd, LED.atual - sizeof(int), SEEK_SET); //para antes do int do registro
+        num_lidos = fread(&tam_reg, sizeof(int), 1, fd); //le o tam do reg
+        if(tam <= tam_reg){
+            inserido = 1; // para parar o enquanto
+            fseek(fd, 2, SEEK_CUR); // pula o *|
+            i = 0;
+            while ((c = fgetc(fd)) != DELIM_STR){ //Le o ponteiro do registro
+                prox[i++] = c;
+            }
+            prox[i] = '\0';
+            LED.prox = atoi(prox); // salva o proximo
+            fseek(fd, LED.atual, SEEK_SET);
+            //fwrite(buffer, tam, 1, fd);
+            fputs(buffer, fd);
+            if (LED.head == LED.atual){
+                fseek(fd, 0, SEEK_SET);
+                fwrite(&LED.prox, sizeof(int), 1, fd);
+            } else {
+                fseek(fd, LED.anterior + 2, SEEK_SET); //pula o *|
+                prox[i++]= '|';
+                prox[i] = '\0';
+                //fwrite(prox, strlen(prox), 1, fd);
+                fputs(prox, fd);
+            }
+        } else {
+            LED.anterior=LED.atual;
+            fseek(fd, 2, SEEK_CUR); // pula o *|
+            i = 0;
+            while (c = fgetc(fd) != DELIM_STR){ //Le o ponteiro do registro
+                prox[i++] = c;
+            }
+            prox[i] = '\0';
+            LED.atual = atoi(prox); // salva o proximo
+        }
+    }
+
+}
 
 void remover(char * numero_inscricao){
   int tam, num_lidos, encontrado, LEDhead, offset;
@@ -166,7 +236,8 @@ void main() {
                 break;
             //Inserir
             case 3:
-
+                system("clear");
+                insercao();
 
                 break;
             //Remover
