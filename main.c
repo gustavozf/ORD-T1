@@ -58,7 +58,7 @@ void insercao(){
         } else {
             fseek(fd, LED.atual - sizeof(int), SEEK_SET); //para antes do int do registro
             num_lidos = fread(&tam_reg, sizeof(int), 1, fd); //le o tam do reg
-            printf("tam = %d, tam_reg = %d, LED HEAD = %d, LEAD atual = %d\n", tam, tam_reg, LED.head, LED.atual);
+            //printf("tam = %d, tam_reg = %d, LED HEAD = %d, LEAD atual = %d\n", tam, tam_reg, LED.head, LED.atual);
             if (tam <= tam_reg) {
                 inserido = 1; // para parar o enquanto
                 fseek(fd, 2, SEEK_CUR); // pula o *|
@@ -79,27 +79,26 @@ void insercao(){
                     fseek(fd, LED.anterior + 2, SEEK_SET); //vai ate o anterior da lista (pulando o *|
                     prox[i++] = '|';
                     prox[i] = '\0';
-                    printf("\nProx do if interno: ");
-                    puts(prox);
+                    //printf("\nProx do if interno: ");
+                    //puts(prox);
                     fputs(prox, fd); // adiciona ao ponteiro dele o proximo da lista
                 }
             } else {
                 LED.anterior = LED.atual;
                 fseek(fd, LED.atual + 2*sizeof(char), SEEK_SET); // pula o *|
-
-                //fseek(fd, LED.atual - sizeof(int), SEEK);
-
                 i = 0;
                 while ((c = fgetc(fd)) != DELIM_STR) { //Le o ponteiro do registro
                     prox[i++] = c;
                 }
                 prox[i] = '\0';
-                printf("\nProx do if externo: ");
-                puts(prox);
+                //printf("\nProx do if externo: ");
+                //puts(prox);
                 LED.atual = atoi(prox); // salva o proximo
             }
         }
     }
+
+    printf("\nInserido com sucesso!");
 }
 
 void remover(char * numero_inscricao){
@@ -185,7 +184,8 @@ void importa_dados(){
   char aux[90];
 
   system("clear");
-  dados_inline = fopen("dados-inline.txt", "r");
+  dados_inline = fopen("dados-inline.txt", "r"); // abre o dados inline pra leitura
+  fd = fopen("registros.txt", "w"); // apre pra escrita dos registros
   fseek(fd, sizeof(int), SEEK_SET);
   while((tam = readreg(aux, dados_inline)) > 0){ //enquanto houver registros para ler
       fwrite(&tam, sizeof(int), 1, fd); //escreve o tam do registro retornado por readreg()
@@ -194,6 +194,8 @@ void importa_dados(){
   fseek(fd, 0, SEEK_SET);
   fwrite(&LEDhead, sizeof(int), 1, fd);
   fclose(dados_inline);
+  fclose(fd); //Fecha, pois esta apenas como leitura
+  fd = fopen("registros.txt", "r+"); //abre para leitura e escrita
   printf("Arquivo de Registros Criado!\n\n");
 
 }
@@ -222,10 +224,7 @@ void main() {
     system("clear");
     fd = fopen("registros.txt", "r");
     if (fd == NULL){// Caso o registro nao exista
-        fd = fopen("registros.txt", "w");
         importa_dados();
-        fclose(fd); //Fecha, pois esta apenas como leitura
-        fd = fopen("registros.txt", "r+"); //abre para leitura e escrita
     } else {// Caso ele exista
       fclose(fd); //Fecha, pois esta apenas como leitura
       fd = fopen("registros.txt", "r+"); //abre para leitura e escrita
@@ -235,6 +234,7 @@ void main() {
         switch(escolha){
             //Importar
             case 1:
+                //remove("registros.txt");
                 importa_dados();
 
                 break;
@@ -252,6 +252,7 @@ void main() {
             //Inserir
             case 3:
                 system("clear");
+                printf("Insira os dados a serem registrados:\n");
                 insercao();
                 continuar();
 
