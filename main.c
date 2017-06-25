@@ -49,8 +49,11 @@ void insercao(){
     fread(&aux1, sizeof(int), 1, fd); //Le o LED Head
     LED.head = LED.atual = LED.anterior = aux1; //salva o valor do LED Head, indicando o ponteiro e o LED Head
     while(!inserido && num_lidos) {
-        if ((LED.head == -1) || (LED.atual == -1)) {
-
+        if (LED.atual == -1) {
+            inserido = 1; //para o enquanto
+            fseek(fd, 0, SEEK_END); //move o cabecote para o final do arquivo
+            fwrite(&tam, sizeof(int), 1, fd); // escreve o tamanho do registro
+            fputs(buffer, fd); // escreve o registro
 
         } else {
             fseek(fd, LED.atual - sizeof(int), SEEK_SET); //para antes do int do registro
@@ -68,16 +71,17 @@ void insercao(){
                 fseek(fd, LED.atual, SEEK_SET);
                 //fwrite(buffer, tam, 1, fd);
                 fputs(buffer, fd);
-                if (LED.head == LED.atual) {
+                if (LED.head == LED.atual) { // Se inserirmos na Head
                     fseek(fd, 0, SEEK_SET);
                     aux1 = LED.prox;
-                    fwrite(&aux1, sizeof(int), 1, fd);
-                } else {
-                    fseek(fd, LED.anterior + 2, SEEK_SET); //pula o *|
+                    fwrite(&aux1, sizeof(int), 1, fd); // a head vira o proximo da lista
+                } else { // caso contrario
+                    fseek(fd, LED.anterior + 2, SEEK_SET); //vai ate o anterior da lista (pulando o *|
                     prox[i++] = '|';
                     prox[i] = '\0';
-                    //fwrite(prox, strlen(prox), 1, fd);
-                    fputs(prox, fd);
+                    printf("\nProx do if interno: ");
+                    puts(prox);
+                    fputs(prox, fd); // adiciona ao ponteiro dele o proximo da lista
                 }
             } else {
                 LED.anterior = LED.atual;
@@ -86,10 +90,11 @@ void insercao(){
                 //fseek(fd, LED.atual - sizeof(int), SEEK);
 
                 i = 0;
-                while (c = fgetc(fd) != DELIM_STR) { //Le o ponteiro do registro
+                while ((c = fgetc(fd)) != DELIM_STR) { //Le o ponteiro do registro
                     prox[i++] = c;
                 }
                 prox[i] = '\0';
+                printf("\nProx do if externo: ");
                 puts(prox);
                 LED.atual = atoi(prox); // salva o proximo
             }
@@ -248,6 +253,7 @@ void main() {
             case 3:
                 system("clear");
                 insercao();
+                continuar();
 
                 break;
             //Remover
